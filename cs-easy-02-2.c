@@ -7,80 +7,83 @@ struct Node
     struct Node *next;
 };
 
-struct Node *createNode(int d)
+struct Node *create(int *num, int s)
 {
-    struct Node *n = (struct Node *)malloc(sizeof(struct Node));
-    n->data = d;
-    n->next = n;
-    return n;
+    struct Node *head = (struct Node *)malloc(sizeof(struct Node));
+    head->data = *num;
+    struct Node *current = head;
+
+    for (int i = 1; i < s; i++)
+    {
+        struct Node *newNode = (struct Node *)malloc(sizeof(struct Node));
+        newNode->data = *(num + i);
+        current->next = newNode;
+        current = newNode;
+    }
+
+    current->next = head;
+    return head;
 }
 
-void insertNode(struct Node **h, int d)
+struct Node *find_3(struct Node *head)
 {
-    struct Node *n = createNode(d);
-    if (*h == NULL)
+    struct Node *current = head;
+    while (current->data != 3)
     {
-        *h = n;
+        current = current->next;
     }
-    else
-    {
-        struct Node *t = *h;
-        while (t->next != *h)
-        {
-            t = t->next;
-        }
-        t->next = n;
-    }
-    n->next = *h;
+    return current;
 }
 
-void josephus(struct Node **h, int m, FILE *output)
+struct Node *delete_Data(struct Node *current, int m, int *deletedData)
 {
-    if (*h == NULL)
-        return;
+    struct Node *previous = NULL;
 
-    struct Node *c = *h;
-    struct Node *p = NULL;
-
-    while (c->data != 3)
+    for (int i = 1; i < m; i++)
     {
-        c = c->next;
+        previous = current;
+        current = current->next;
     }
 
-    while (c->next != c)
+    if (previous == NULL)
     {
-        for (int i = 1; i < m; i++)
+        previous = current;
+        while (previous->next != current)
         {
-            p = c;
-            c = c->next;
+            previous = previous->next;
         }
-        fprintf(output, "%d", c->data);
-        p->next = c->next;
-        struct Node *t = c;
-        c = c->next;
-        free(t);
     }
-    fprintf(output, "%d\n", c->data);
-    free(c);
+
+    *deletedData = current->data;
+    previous->next = current->next;
+    struct Node *nextNode = current->next;
+    free(current);
+    return nextNode;
+}
+
+void Josephus(struct Node *head)
+{
+    FILE *file = fopen("Josephus.out", "w");
+    struct Node *current = find_3(head);
+    int r = 1;
+    while (current->next != current)
+    {
+        int deletedData;
+        current = delete_Data(current, r, &deletedData);
+        fprintf(file, "%d", deletedData);
+        r++;
+    }
+
+    fprintf(file, "%d\n", current->data);
+    fclose(file);
+    free(current);
 }
 
 int main()
 {
-    struct Node *h = NULL;
-
-    int num[] = {1, 2, 1, 1, 1, 2, 1, 1, 1, 1, 2, 2, 2, 2, 1, 2, 1, 1, 3, 1, 1, 2, 1, 2, 2, 2, 2, 1, 1, 2, 2, 1, 1, 1};
+    int num[] = {1, 1, 1, 1, 2, 1, 2, 2, 1, 1, 2, 1, 2, 1, 3, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 1, 1, 2, 2, 2};
     int size = sizeof(num) / sizeof(*num);
-
-    for (int i = 0; i < size; i++)
-    {
-        insertNode(&h, num[i]);
-    }
-
-    FILE *output = freopen("Josephus.out", "w", stdout);
-
-    int m = 3;
-    josephus(&h, m, output);
-
-    fclose(stdout);
+    struct Node *head = create(num, size);
+    Josephus(head);
     return 0;
 }
